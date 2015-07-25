@@ -3,12 +3,17 @@
 # Bash Network Reconnaissance Script  #
 # DarkerEgo's Bash Snippets, GPL 2015 #
 #######################################
-OUTPUT="netenv.$(date +'%d-%m-%y').log"
+
+sftpUSER="user"
+sftpHOST="hostname"
+sftpDIR="directory"
+
+OUTPUT="netenv.$(hostname).$(date +'%d-%m-%y').html"
 TITLE="Bash Network Reconnaissance Results"
 RIGHT_NOW=$(date +"%x %r %Z")
 pubIP=$(curl ipreturn.tk)
-WlocIP=$(ifconfig wlan0 | grep Mask | cut -d ':' -f2 | cut -d " " -f1)
-ElocIP=$(ifconfig eth0 | grep Mask | cut -d ':' -f2 | cut -d " " -f1)
+WlocIP=$(/sbin/ifconfig wlan0 | grep Mask | cut -d ':' -f2 | cut -d " " -f1)
+ElocIP=$(/sbin/ifconfig eth0 | grep Mask | cut -d ':' -f2 | cut -d " " -f1)
 ElocSN=$(echo ${ElocIP} | cut -d "." -f -3 | sed 's/$/.*/')
 WlocSN=$(echo ${WlocIP} | cut -d "." -f -3 | sed 's/$/.*/')
 
@@ -18,7 +23,7 @@ function pub_ipinfo(){
 
 	echo "<h3> Nmap results for public facing IP </h3>"
 	echo "<pre>"
-	nmap -sS -sV -Pn ${pubIP}
+	nmap -sV -Pn -F ${pubIP}
 	echo "</pre>"
 }
 
@@ -28,7 +33,7 @@ if [[ ${WlocIP} != "" ]]; then
 
 	echo "<h3> Nmap results for wifi IP </h3>"
 	echo "<pre>"
-	nmap -sS -sV ${WlocSN}
+	nmap -sV -F ${WlocSN}
 	echo "</pre>"
 	
 else
@@ -42,7 +47,7 @@ if [[ ${ElocIP} != "" ]]; then
 
 	echo "<h3> Nmap results for eth IP </h3>"
 	echo "<pre>"
-	nmap -sS -sV ${ElocSN}
+	nmap -sV -F ${ElocSN}
 	echo "</pre>"
 else
 	echo "Ethernet not available"
@@ -70,12 +75,23 @@ _EOF_
 
 }
 
+function phone_HOME(){
+if [ ! -f batch ];then
+
+cat << 'EOF' >> batch
+        put netenv*.html
+EOF
+
+fi
+
+sftp -b batch $sftpUSER@$sftpHOST:/$sftpDIR
 
 
+}
 
-pub_ipinfo
-wf_ipinfo
-eth_ipinfo
-write_page > net_env.html
+
+write_page > $OUTPUT
+phone_HOME
+
 
 exit

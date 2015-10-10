@@ -80,10 +80,9 @@ sftp -b batch $sftpUSER@$sftpHOST:/$sftpDIR
 }
 
 function clean_UP(){
-
-srm $workDIR/$OUTPUT
-srm $workDIR/batch
-rmdir $workDIR
+# if secure-delete is not available, revert to rm
+srm -r $workDIR || rm -rf $workDIR
+echo "muahahahaha" >> /dev/null
 }
 
 

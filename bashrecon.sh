@@ -14,7 +14,7 @@ workDIR="/tmp/netrecon"
 OUTPUT="netenv.$(hostname).$(date +'%d-%m-%y').html"
 TITLE="Bash Network Reconnaissance Results"
 RIGHT_NOW=$(date +"%x %r %Z")
-pubIP=$(curl ipreturn.tk)
+pubIP=$(curl ipreturn.tk/raw)
 ########################
 INTFACES=$(/sbin/ifconfig -a | sed 's/[ \t].*//;/^\(lo\|\)$/d')
 intIPS=$(for i in ${INTFACES}; do /sbin/ifconfig $i | grep Mask | cut -d ':' -f2 | cut -d " " -f1; done)
